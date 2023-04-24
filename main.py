@@ -34,6 +34,24 @@ prior = prior.isoformat() + "Z"
 
 print(today, prior)
 
+def initCA():
+    cells = [0 for _ in range(num_cells)]
+    if random.random() > 0.5:
+        cells[len(cells) // 2] = 1
+    else:
+        cells[random.randint(0,len(cells)-1)] = 1
+
+    # standard wolfram rules
+    # TBD param
+    if random.random() > 0.5:
+        ruleset = [0, 1, 0, 1, 1, 0, 1, 0]
+    else:
+        # random rules
+        ruleset = []
+        for _ in range(8):
+            ruleset.append(random.choice([0, 1]))
+    return cells, ruleset
+
 def WolframCARules(a, b, c, ruleset):
     if a == 1 and b == 1 and c == 1: return ruleset[0]
     if a == 1 and b == 1 and c == 0: return ruleset[1]
@@ -67,6 +85,13 @@ def draw_rect_alpha(surf, col, rect):
     shape_surf = pygame.Surface(pygame.Rect(rect).size, pygame.SRCALPHA)
     pygame.draw.rect(shape_surf, col, shape_surf.get_rect())
     surf.blit(shape_surf, rect)
+
+def draw_ui(surf, font, col, active):
+    op = "R[{0}] G[{1}] B[{2}] A[{3}]".format(col[0], col[1], col[2], col[3])
+    text_width, text_height = font.size(op)
+    label = font.render(op, 1, (220, 220, 220))
+    draw_rect_alpha(surf, (0,0,0), pygame.Rect(20,20,text_width, text_height))
+    surf.blit(label, (20, 20))
 
 
 # def getNoise(x, y, z, multX=0.01, multY=0.01, multZ=0.01) -> float:
@@ -152,6 +177,9 @@ if __name__ == "__main__":
     background_surf = pygame.surfarray.make_surface(all_black)
     display.blit(background_surf, (0, 0))
 
+    font = pygame.font.SysFont("monospace", 14)
+
+
     # audio = pygame.mixer.Sound(songs[0])
     # RATE = 44100
     # CHUNK = int((1/30) * RATE)
@@ -180,21 +208,7 @@ if __name__ == "__main__":
     h = (SCR_HEIGHT // w) + 1
     generation = 0
     num_cells = (SCR_WIDTH // w) + 1
-    cells = [0 for _ in range(num_cells)]
-    if random.random() > 0.5:
-        cells[len(cells) // 2] = 1
-    else:
-        cells[random.randint(0,len(cells)-1)] = 1
-
-    # standard wolfram rules
-    # TBD param
-    if random.random() > 0.5:
-        ruleset = [0, 1, 0, 1, 1, 0, 1, 0]
-    else:
-        # random rules
-        ruleset = []
-        for _ in range(8):
-            ruleset.append(random.choice([0, 1]))
+    cells, ruleset = initCA()
 
     r_col = 255
     g_col = 0
@@ -208,6 +222,7 @@ if __name__ == "__main__":
     while not done:
         dt = clock.tick(60) / 1000.0
         pygame.display.set_caption(f"HWVisualizer - FPS:{clock.get_fps():4.0f}")
+        draw_ui(display, font, main_col, True)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -223,6 +238,9 @@ if __name__ == "__main__":
 
                 if event.key == pygame.K_p:
                     paused = not paused
+
+                if event.key  == pygame.K_0:
+                    cells, ruleset = initCA()
 
 
         if not paused:
@@ -255,7 +273,7 @@ if __name__ == "__main__":
             b_col = constrain(b_col, 0, 255)
             a_col = constrain(a_col, 0, 255)
             main_col = (r_col, g_col, b_col, a_col)
-            print(main_col)
+            # print(main_col)
 
 
         #         if event.key == pygame.K_SPACE:
