@@ -12,8 +12,10 @@ import numba as nb
 # from pixelsort import pixelsort
 
 # display
-SCR_WIDTH = 800#1920
-SCR_HEIGHT = 600#1080
+# SCR_WIDTH = 800
+# SCR_HEIGHT = 600
+SCR_WIDTH = 1920
+SCR_HEIGHT = 1080
 
 # NOAA data
 import requests
@@ -23,7 +25,6 @@ import datetime
 # https://coastwatch.pfeg.noaa.gov/erddap/tabledap/pmelTaoDySst.mat?time,T_25&station="0n0e"&time>=2015-05-23T12:00:00Z&time<=2015-05-31T12:00:00Z
 # noaa_url = "https://coastwatch.pfeg.noaa.gov/erddap/tabledap/pmelTaoDySst.json?longitude,latitude,time,station,wmo_platform_code,T_25&time%3E=2015-05-23T12:00:00Z&time%3C=2015-05-31T12:00:00Z"
 
-# https://github.com/Norne9/metaballs/blob/master/metaballs.py
 
 today = datetime.datetime.utcnow()
 prior = today - datetime.timedelta(days=60)
@@ -33,10 +34,39 @@ prior = prior.isoformat() + "Z"
 
 print(today, prior)
 
+def WolframCARules(a, b, c, ruleset):
+    if a == 1 and b == 1 and c == 1: return ruleset[0]
+    if a == 1 and b == 1 and c == 0: return ruleset[1]
+    if a == 1 and b == 0 and c == 1: return ruleset[2]
+    if a == 1 and b == 0 and c == 0: return ruleset[3]
+    if a == 0 and b == 1 and c == 1: return ruleset[4]
+    if a == 0 and b == 1 and c == 0: return ruleset[5]
+    if a == 0 and b == 0 and c == 1: return ruleset[6]
+    if a == 0 and b == 0 and c == 0: return ruleset[7]
+    return 0
+
+
+def WolframCAGenerate(cells, generation, ruleset):
+    nextgen = [0 for _ in range(len(cells))]
+    for i in range(1, len(cells) - 1):
+        left = cells[i - 1]
+        middle = cells[i]
+        right = cells[i + 1]
+        nextgen[i] = WolframCARules(left, middle, right, ruleset)
+    #cells = nextgen
+    generation += 1
+    return nextgen, generation
+
 # map function similar to p5.js
 # @nb.njit(parallel=True, fastmath=True)
 def p5map(n, start1, stop1, start2, stop2):
     return ((n - start1) / (stop1 - start1)) * (stop2 - start2) + start2
+
+# https://stackoverflow.com/questions/6339057/draw-a-transparent-rectangles-and-polygons-in-pygame
+def draw_rect_alpha(surf, col, rect):
+    shape_surf = pygame.Surface(pygame.Rect(rect).size, pygame.SRCALPHA)
+    pygame.draw.rect(shape_surf, col, shape_surf.get_rect())
+    surf.blit(shape_surf, rect)
 
 
 # def getNoise(x, y, z, multX=0.01, multY=0.01, multZ=0.01) -> float:
@@ -108,100 +138,19 @@ def constrain(val, min_val, max_val):
 
 # songs = ["ai.mp3", "smoke-143172.mp3"]
 
-### metaballs
-CORES = os.cpu_count()
-DEFAULT_N_BALLS = 6
-
-def update_balls(balls: np.ndarray, dt: float):
-    for b in range(balls.shape[0]):
-        balls[b].pos += balls[b].vel * dt * 80.0
-
-        # bounce
-        screen = [SCR_WIDTH, SCR_HEIGHT]
-        for axis in range(2):
-            if balls[b].pos[axis] < balls[b].radius:
-                balls[b].vel[axis] = np.abs(balls[b].vel[axis])
-            elif balls[b].pos[axis] > screen[axis] - balls[b].radius:
-                balls[b].vel[axis] = -np.abs(balls[b].vel[axis])
-
-        # bounce from others
-        for b2 in range(balls.shape[0]):
-            if b2 == b:
-                continue
-
-            delta = balls[b].pos - balls[b2].pos
-            dist2 = np.dot(delta, delta)
-            rad2 = balls[b].radius + balls[b2].radius
-            rad2 *= rad2
-
-            if dist2 < rad2:
-                balls[b].vel = delta / np.max(np.abs(delta))
-
-@nb.njit(parallel=True, fastmath=True)
-def draw_balls(screen: np.ndarray, balls: np.ndarray):
-    w, h = screen.shape[0], screen.shape[1]
-    b_count = balls.shape[0]
-
-    # to use all cores
-    for start in nb.prange(CORES):
-        # for each pixel on screen
-        for x in range(start, w, CORES):
-            for y in range(h):
-                screen[x, y].fill(0)  # clear pixel
-                # for each ball
-                for b in range(b_count):
-                    # calculate value
-                    dx, dy = balls[b].pos[0] - x, balls[b].pos[1] - y
-                    light = balls[b].radius * balls[b].radius / (dx * dx + dy * dy)
-
-                    # multiply value by ball color
-                    for c in range(3):
-                        screen[x, y, c] += balls[b].rgb[c] * light * 255.0
-
-                # if color > max => normalize color
-                max_color = screen[x, y].max()
-                if max_color > 255:
-                    screen[x, y] = screen[x, y] * 255 // max_color
-                else:  # else => color = color * color / 2
-                    screen[x, y] *= screen[x, y]
-                    screen[x, y] //= 500
-
-
-def create_balls(n_balls):
-    """make random balls"""
-    balls = np.recarray(
-        (n_balls,), dtype=[("pos", ("<f4", (2,))), ("rgb", ("<f4", (3,))), ("radius", "f4"), ("vel", ("<f4", (2,)))],
-    )
-    for i in range(balls.shape[0]):
-        # generate ball
-        balls[i].radius = np.random.randint(5, 15) * 5
-        balls[i].pos = (
-            np.random.randint(balls[i].radius, SCR_WIDTH - balls[i].radius),
-            np.random.randint(balls[i].radius, SCR_HEIGHT - balls[i].radius),
-        )
-        balls[i].rgb = np.random.rand(3)
-        balls[i].rgb[i % 3] = 1
-        balls[i].vel = np.random.rand(2)
-        balls[i].vel = balls[i].vel / balls[i].vel.max()
-    return balls
-
 if __name__ == "__main__":
     pygame.init()
 
     pygame.display.set_caption("HWVisualizer")
 
     display = pygame.display.set_mode((SCR_WIDTH, SCR_HEIGHT))#, pygame.FULLSCREEN)
-    display.fill((220,220, 220))
+    display.fill((20,20, 20))
 
     clock = pygame.time.Clock()
 
     all_black = np.zeros((SCR_WIDTH, SCR_HEIGHT))
     background_surf = pygame.surfarray.make_surface(all_black)
     display.blit(background_surf, (0, 0))
-
-    n_balls = DEFAULT_N_BALLS
-    balls = create_balls(n_balls)
-    screen_arr = np.zeros((SCR_WIDTH, SCR_HEIGHT, 3), dtype=np.int32)
 
     # audio = pygame.mixer.Sound(songs[0])
     # RATE = 44100
@@ -225,31 +174,119 @@ if __name__ == "__main__":
     done = False
     col = 0
     updated = False
+
+    # wolfram
+    w = 10
+    h = (SCR_HEIGHT // w) + 1
+    generation = 0
+    num_cells = (SCR_WIDTH // w) + 1
+    cells = [0 for _ in range(num_cells)]
+    if random.random() > 0.5:
+        cells[len(cells) // 2] = 1
+    else:
+        cells[random.randint(0,len(cells)-1)] = 1
+
+    # standard wolfram rules
+    # TBD param
+    if random.random() > 0.5:
+        ruleset = [0, 1, 0, 1, 1, 0, 1, 0]
+    else:
+        # random rules
+        ruleset = []
+        for _ in range(8):
+            ruleset.append(random.choice([0, 1]))
+
+    r_col = 255
+    g_col = 0
+    b_col = 255
+    a_col = 20
+    main_col = (r_col, g_col, b_col, a_col)
+
+    paused = False
+
+
     while not done:
         dt = clock.tick(60) / 1000.0
-        pygame.display.set_caption(f"HWVisualizer - Balls: {n_balls}, FPS:{clock.get_fps():4.0f}")
+        pygame.display.set_caption(f"HWVisualizer - FPS:{clock.get_fps():4.0f}")
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
 
+            # press and release
             if event.type == pygame.KEYDOWN:
                 updated = False
                 if event.key == pygame.K_ESCAPE:
                     done = True
+                if event.key == pygame.K_o:
+                    pygame.image.save(display, "output.png")
 
-                if event.key == pygame.K_SPACE:
-                    balls = create_balls(n_balls)
-                if event.key == pygame.K_UP:
-                    n_balls += 1
-                    balls = create_balls(n_balls)
-                if event.key == pygame.K_DOWN:
-                    n_balls = max(1, n_balls-1)
-                    balls = create_balls(n_balls)
+                if event.key == pygame.K_p:
+                    paused = not paused
 
-        update_balls(balls, dt)
-        draw_balls(screen_arr, balls)
-        pygame.surfarray.blit_array(display, screen_arr)
+
+        if not paused:
+            # repeating keys
+            keys = pygame.key.get_pressed()
+
+#                if event.key == pygame.K_d:
+#                    dither()
+
+                # modify color?
+            if keys[pygame.K_q]:
+                r_col += 1
+            if keys[pygame.K_a]:
+                r_col -= 1
+            if keys[pygame.K_w]:
+                g_col += 1
+            if keys[pygame.K_s]:
+                g_col -= 1
+            if keys[pygame.K_e]:
+                b_col += 1
+            if keys[pygame.K_d]:
+                b_col -= 1
+            if keys[pygame.K_r]:
+                a_col += 1
+            if keys[pygame.K_f]:
+                a_col -= 1
+
+            r_col = constrain(r_col, 0, 255)
+            g_col = constrain(g_col, 0, 255)
+            b_col = constrain(b_col, 0, 255)
+            a_col = constrain(a_col, 0, 255)
+            main_col = (r_col, g_col, b_col, a_col)
+            print(main_col)
+
+
+        #         if event.key == pygame.K_SPACE:
+        #             balls = create_balls(n_balls)
+        #         if event.key == pygame.K_UP:
+        #             n_balls += 1
+        #             balls = create_balls(n_balls)
+        #         if event.key == pygame.K_DOWN:
+        #             n_balls = max(1, n_balls-1)
+        #             balls = create_balls(n_balls)
+
+        # update_balls(balls, dt)
+        # draw_balls(screen_arr, balls)
+
+        # pygame.surfarray.blit_array(display, screen_arr)
+
+            # wolfram
+            for i in range(len(cells)):
+                x = i * w
+                y = generation * w
+                drawRect = False
+                if cells[i] == 1:
+                    drawRect = True
+                # pygame.draw.rect(display, col, (x, y, w, h))
+                if drawRect:
+                    draw_rect_alpha(display, main_col, pygame.Rect(x, y, w, h))
+
+
+            cells, generation = WolframCAGenerate(cells, generation, ruleset)
+            if generation >= h-1:
+                generation = 0
 
 
 
