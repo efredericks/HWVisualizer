@@ -91,8 +91,8 @@ def draw_rect_alpha(surf, col, rect):
     pygame.draw.rect(shape_surf, col, shape_surf.get_rect())
     surf.blit(shape_surf, rect)
 
-def draw_ui(surf, font, col, active, refreshTimer):
-    op = "R[{0}] G[{1}] B[{2}] A[{3}], RT[{4}]".format(col[0], col[1], col[2], col[3], refreshTimer)
+def draw_ui(surf, font, col, active, refreshTimer, technique):
+    op = "R[{0}] G[{1}] B[{2}] A[{3}], RT[{4}], T[{5}]".format(col[0], col[1], col[2], col[3], refreshTimer, technique)
     text_width, text_height = font.size(op)
     label = font.render(op, 1, (220, 220, 220))
     draw_rect_alpha(surf, (0,0,0), pygame.Rect(20,20,text_width, text_height))
@@ -112,9 +112,14 @@ if __name__ == "__main__":
 
     clock = pygame.time.Clock()
 
+    # store a black background for clearing
     all_black = np.zeros((SCR_WIDTH, SCR_HEIGHT))
     background_surf = pygame.surfarray.make_surface(all_black)
     display.blit(background_surf, (0, 0))
+
+    # the 'main' drawing area
+    main_surf = pygame.Surface(pygame.Rect((0,0,SCR_WIDTH, SCR_HEIGHT)).size, pygame.SRCALPHA)
+    ui_surf = pygame.Surface(pygame.Rect((0,0,500,500)).size, pygame.SRCALPHA)
 
     font = pygame.font.SysFont("monospace", 14)
 
@@ -131,18 +136,24 @@ if __name__ == "__main__":
     r_col = 255
     g_col = 0
     b_col = 255
-    a_col = 20
+    a_col = 10
     main_col = (r_col, g_col, b_col, a_col)
 
     refreshTimer = 0
     maxRefresh = 1000
     paused = False
 
+    techniques = ["WolframCA"]
+    activeTechnique = techniques[0]
+
+    display.blit(background_surf, (0, 0))
+    main_surf.blit(background_surf, (0, 0))
+
     while not done:
         dt = clock.tick(60) / 1000.0
         refreshTimer += 1
         pygame.display.set_caption(f"HWVisualizer - FPS:{clock.get_fps():4.0f}")
-        draw_ui(display, font, main_col, True, refreshTimer)
+        draw_ui(ui_surf, font, main_col, True, refreshTimer, activeTechnique)
 
         if refreshTimer >= maxRefresh:
             refreshTimer = 0
@@ -163,7 +174,7 @@ if __name__ == "__main__":
                     done = True
                 ## TBD: doesn't work with HWSURFACE
                 if event.key == pygame.K_o:
-                    pygame.image.save(display, "output.png")
+                    pygame.image.save(main_surf, "output.png")
 
                 if event.key == pygame.K_p:
                     paused = not paused
@@ -172,7 +183,7 @@ if __name__ == "__main__":
                     cells, ruleset = initCA()
 
                 if event.key == pygame.K_b:
-                    display.blit(background_surf, (0, 0))
+                    main_surf.blit(background_surf, (0, 0))
 
 
 
@@ -213,12 +224,16 @@ if __name__ == "__main__":
                     drawRect = True
                 # pygame.draw.rect(display, col, (x, y, w, h))
                 if drawRect:
-                    draw_rect_alpha(display, main_col, pygame.Rect(x, y, w, h))
+                    draw_rect_alpha(main_surf, main_col, pygame.Rect(x, y, w, h))
 
 
             cells, generation = WolframCAGenerate(cells, generation, ruleset)
             if generation >= h-1:
                 generation = 0
+
+        # blit surfaces to screen
+        display.blit(main_surf, (0, 0))
+        display.blit(ui_surf, (0, 0))
 
         pygame.display.update()
 
