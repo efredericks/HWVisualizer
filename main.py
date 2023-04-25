@@ -91,6 +91,14 @@ def draw_rect_alpha(surf, col, rect):
     pygame.draw.rect(shape_surf, col, shape_surf.get_rect())
     surf.blit(shape_surf, rect)
 
+def draw_circ_alpha(surf, col, x, y, r):
+    # shape_surf = pygame.Surface((SCR_WIDTH, SCR_HEIGHT), pygame.SRCALPHA)
+    surf.set_alpha(col[3])
+    rect = pygame.Rect(x, y, r*2, r*2)
+    # shape_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
+    pygame.draw.circle(surf, col, (x, y), r)
+    # surf.blit(shape_surf, rect)
+
 def draw_ui(surf, font, col, active, refreshTimer, technique):
     op = "R[{0}] G[{1}] B[{2}] A[{3}], RT[{4}], T[{5}]".format(col[0], col[1], col[2], col[3], refreshTimer, technique)
     text_width, text_height = font.size(op)
@@ -102,6 +110,55 @@ def draw_ui(surf, font, col, active, refreshTimer, technique):
 def constrain(val, min_val, max_val):
     return min(max_val, max(min_val, val))
 
+def makeNoiseField(noise_grid, multX, multY, t):
+    for r in range(SCR_HEIGHT-1):#num_cells):
+        for c in range(SCR_WIDTH-1):#num_cells):
+            n = opensimplex.noise3(x=c*multX, y=r*multY, z=multY*random.randint(0,10000))
+            val = p5map(n, -1.0, 1.0, 0.0, math.pi * 2.0)
+            noise_grid[c,r] = val
+    return noise_grid
+
+import pygame.pixelcopy
+
+# c/o https://github.com/pygame/pygame/issues/1244
+def make_surface_rgba(array):
+    """Returns a surface made from a [w, h, 4] numpy array with per-pixel alpha
+    """
+    shape = array.shape
+    if len(shape) != 3 and shape[2] != 4:
+        raise ValueError("Array not RGBA")
+
+    # Create a surface the same width and height as array and with
+    # per-pixel alpha.
+    surface = pygame.Surface(shape[0:2], pygame.SRCALPHA, 32)
+
+    # Copy the rgb part of array to the new surface.
+    pygame.pixelcopy.array_to_surface(surface, array[:,:,0:3])
+
+    # Copy the alpha part of array to the surface using a pixels-alpha
+    # view of the surface.
+    surface_alpha = np.array(surface.get_view('A'), copy=False)
+    surface_alpha[:,:] = array[:,:,3]
+
+    return surface
+
+def generateParticles():
+    particles = []
+    num_particles = random.randint(50,150)
+    for _ in range(num_particles):
+        r = random.randint(1,15)
+        particles.append({
+            'x': random.randint(0,SCR_WIDTH-1),
+            'y': random.randint(0,SCR_HEIGHT-1),
+            'r': r,
+            'r2': r/2,
+            'c': (r_col, g_col, b_col, a_col)
+        })
+    return particles
+
+
+
+
 if __name__ == "__main__":
     pygame.init()
 
@@ -111,6 +168,8 @@ if __name__ == "__main__":
     display.fill((20,20, 20))
 
     clock = pygame.time.Clock()
+
+    opensimplex.seed(random.randint(0,100000))
 
     # store a black background for clearing
     all_black = np.zeros((SCR_WIDTH, SCR_HEIGHT))
@@ -143,11 +202,20 @@ if __name__ == "__main__":
     maxRefresh = 1000
     paused = False
 
-    techniques = ["WolframCA"]
+    techniques = ["WolframCA", "NoiseField"]
+    random.shuffle(techniques)
     activeTechnique = techniques[0]
 
     display.blit(background_surf, (0, 0))
     main_surf.blit(background_surf, (0, 0))
+
+    multX = 0.001
+    multY = 0.001
+    noise_grid = np.zeros((SCR_WIDTH, SCR_HEIGHT, 1))#np.zeros((num_cells, num_cells))
+    noise_grid = makeNoiseField(noise_grid, multX, multY, "flow")
+    particles = generateParticles()
+
+    # print(noise_grid)
 
     while not done:
         dt = clock.tick(60) / 1000.0
@@ -157,11 +225,16 @@ if __name__ == "__main__":
 
         if refreshTimer >= maxRefresh:
             refreshTimer = 0
-            cells, ruleset = initCA()
             r_col = random.randint(0,255)
             g_col = random.randint(0,255)
             b_col = random.randint(0,255)
             a_col = random.randint(10,80)
+
+            if activeTechnique == "WolframCA":
+                cells, ruleset = initCA()
+            else:
+                noise_grid = makeNoiseField(noise_grid, multX, multY, "flow")
+                particles = generateParticles()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -184,6 +257,19 @@ if __name__ == "__main__":
 
                 if event.key == pygame.K_b:
                     main_surf.blit(background_surf, (0, 0))
+
+                if event.key == pygame.K_EQUALS:
+                    refreshTimer = 0
+                    r_col = random.randint(0,255)
+                    g_col = random.randint(0,255)
+                    b_col = random.randint(0,255)
+                    a_col = random.randint(10,80)
+
+                    random.shuffle(techniques)
+                    activeTechnique = techniques[0]
+                    if activeTechnique == "NoiseField":
+                        noise_grid = makeNoiseField(noise_grid, multX, multY, "flow")
+                        particles = generateParticles()
 
 
 
@@ -215,21 +301,39 @@ if __name__ == "__main__":
             a_col = constrain(a_col, 0, 255)
             main_col = (r_col, g_col, b_col, a_col)
 
-            # wolfram
-            for i in range(len(cells)):
-                x = i * w
-                y = generation * w
-                drawRect = False
-                if cells[i] == 1:
-                    drawRect = True
-                # pygame.draw.rect(display, col, (x, y, w, h))
-                if drawRect:
-                    draw_rect_alpha(main_surf, main_col, pygame.Rect(x, y, w, h))
+            if activeTechnique == "WolframCA":
+                # wolfram
+                for i in range(len(cells)):
+                    x = i * w
+                    y = generation * w
+                    drawRect = False
+                    if cells[i] == 1:
+                        drawRect = True
+                    # pygame.draw.rect(display, col, (x, y, w, h))
+                    if drawRect:
+                        draw_rect_alpha(main_surf, main_col, pygame.Rect(x, y, w, h))
 
 
-            cells, generation = WolframCAGenerate(cells, generation, ruleset)
-            if generation >= h-1:
-                generation = 0
+                cells, generation = WolframCAGenerate(cells, generation, ruleset)
+                if generation >= h-1:
+                    generation = 0
+            elif activeTechnique == "NoiseField":
+                for p in particles:
+                    p['c'] = main_col
+                    # pygame.draw.circle(main_surf, p['c'], (p['x'], p['y']), p['r'])
+                    draw_circ_alpha(main_surf, p['c'], p['x'], p['y'], p['r'])
+                    
+                    angle = noise_grid[int(p['x']), int(p['y'])]
+                    p['x'] += p['r2'] * math.cos(angle)
+                    p['y'] += p['r2'] * math.sin(angle)
+
+                    if p['x'] < 0 or p['x'] > SCR_WIDTH-1 or p['y'] < 0 or p['y'] > SCR_HEIGHT-1:
+                        p['x'] = random.randint(0,SCR_WIDTH-1)
+                        p['y'] = random.randint(0,SCR_HEIGHT-1)
+                # main_surf.blit(noise_surf, (0, 0))
+
+
+
 
         # blit surfaces to screen
         display.blit(main_surf, (0, 0))
