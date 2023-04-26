@@ -198,10 +198,14 @@ if __name__ == "__main__":
     num_cells = (SCR_WIDTH // w) + 1
     cells, ruleset = initCA()
 
-    r_col = 255
-    g_col = 0
-    b_col = 255
-    a_col = 10
+    #r_col = 255
+    #g_col = 0
+    #b_col = 255
+    #a_col = 10
+    r_col = random.randint(0,255)
+    g_col = random.randint(0,255)
+    b_col = random.randint(0,255)
+    a_col = random.randint(5,40)
     main_col = (r_col, g_col, b_col, a_col)
 
     refreshTimer = 0
@@ -235,7 +239,7 @@ if __name__ == "__main__":
             r_col = random.randint(0,255)
             g_col = random.randint(0,255)
             b_col = random.randint(0,255)
-            a_col = random.randint(10,80)
+            a_col = random.randint(5,40)
             multX = random.uniform(0.0001, 0.1)
             multY = multX#0.001
 
@@ -274,7 +278,8 @@ if __name__ == "__main__":
                     r_col = random.randint(0,255)
                     g_col = random.randint(0,255)
                     b_col = random.randint(0,255)
-                    a_col = random.randint(10,80)
+                   # a_col = random.randint(10,80)
+                    a_col = random.randint(5,40)
 
                     random.shuffle(techniques)
                     activeTechnique = techniques[0]
