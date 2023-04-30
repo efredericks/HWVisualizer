@@ -9,8 +9,11 @@ import opensimplex
 # from pixelsort import pixelsort
 
 # display
-SCR_WIDTH = 1920
-SCR_HEIGHT = 1080
+SCR_WIDTH = 800#1920
+SCR_HEIGHT = 600#1080
+
+HALF_SCR_W = SCR_WIDTH // 2
+HALF_SCR_H = SCR_HEIGHT // 2
 
 # NOAA data
 # Visualizing data from the shoreline
@@ -91,19 +94,33 @@ def draw_rect_alpha(surf, col, rect):
     pygame.draw.rect(shape_surf, col, shape_surf.get_rect())
     surf.blit(shape_surf, rect)
 
-def draw_circ_alpha(surf, col, x, y, r):
-    #rect = pygame.Rect(0,0,r*2,r*2)
-    #shape_surf = pygame.Surface(pygame.Rect(rect).size, pygame.SRCALPHA)
-    #pygame.draw.circle(shape_surf, col, (0,0), r)#shape_surf.get_rect())
-    #surf.blit(shape_surf, rect)
+def draw_polygon_alpha(surface, color, points):
+    lx, ly = zip(*points)
+    min_x, min_y, max_x, max_y = min(lx), min(ly), max(lx), max(ly)
+    target_rect = pygame.Rect(min_x, min_y, max_x - min_x, max_y - min_y)
+    shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
+    pygame.draw.polygon(shape_surf, color, [(x - min_x, y - min_y) for x, y in points])
+    surface.blit(shape_surf, target_rect)
 
-    surf.set_alpha(col[3])
-    rect = pygame.Rect(x, y, r*2, r*2)
-    pygame.draw.circle(surf, col, (int(x), int(y)), int(r))
+def draw_circle_alpha(surface, color, center, radius):
+    target_rect = pygame.Rect(center, (0, 0)).inflate((radius * 2, radius * 2))
+    shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
+    pygame.draw.circle(shape_surf, color, (radius, radius), radius)
+    surface.blit(shape_surf, target_rect)
 
-    # shape_surf = pygame.Surface((SCR_WIDTH, SCR_HEIGHT), pygame.SRCALPHA)
-    # shape_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
-    # surf.blit(shape_surf, rect)
+# def draw_circ_alpha(surf, col, x, y, r):
+#     #rect = pygame.Rect(0,0,r*2,r*2)
+#     #shape_surf = pygame.Surface(pygame.Rect(rect).size, pygame.SRCALPHA)
+#     #pygame.draw.circle(shape_surf, col, (0,0), r)#shape_surf.get_rect())
+#     #surf.blit(shape_surf, rect)
+
+#     surf.set_alpha(col[3])
+#     rect = pygame.Rect(x, y, r*2, r*2)
+#     pygame.draw.circle(surf, col, (int(x), int(y)), int(r))
+
+#     # shape_surf = pygame.Surface((SCR_WIDTH, SCR_HEIGHT), pygame.SRCALPHA)
+#     # shape_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
+#     # surf.blit(shape_surf, rect)
 
 def draw_ui(surf, font, col, active, refreshTimer, technique):
     op = "R[{0}] G[{1}] B[{2}] A[{3}], RT[{4}], T[{5}]".format(col[0], col[1], col[2], col[3], refreshTimer, technique)
@@ -170,7 +187,7 @@ if __name__ == "__main__":
 
     pygame.display.set_caption("HWVisualizer")
 
-    display = pygame.display.set_mode((SCR_WIDTH, SCR_HEIGHT), pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN)
+    display = pygame.display.set_mode((SCR_WIDTH, SCR_HEIGHT), pygame.HWSURFACE | pygame.DOUBLEBUF)# | pygame.FULLSCREEN)
     display.fill((20,20, 20))
 
     clock = pygame.time.Clock()
@@ -209,12 +226,12 @@ if __name__ == "__main__":
     main_col = (r_col, g_col, b_col, a_col)
 
     refreshTimer = 0
-    maxRefresh = 1000
+    maxRefresh = 200#1000
     paused = False
 
-    techniques = ["WolframCA", "NoiseField"]
+    techniques = ["WolframCA", "NoiseField", "RadialNoise"]
     random.shuffle(techniques)
-    activeTechnique = techniques[0]
+    activeTechnique = "RadialNoise"#techniques[0]
 
     display.blit(background_surf, (0, 0))
     main_surf.blit(background_surf, (0, 0))
@@ -227,6 +244,10 @@ if __name__ == "__main__":
 
     # print(noise_grid)
 
+    radial_r = 1
+    radial_step = math.pi / 32
+    radial_steps = np.linspace(0.0, math.pi * 2.0, retstep=radial_step)
+
     while not done:
         dt = clock.tick(60) / 1000.0
         pygame.display.set_caption(f"HWVisualizer - FPS:{clock.get_fps():4.0f}")
@@ -235,19 +256,21 @@ if __name__ == "__main__":
         if refreshTimer >= maxRefresh:
             refreshTimer = 0
             random.shuffle(techniques)
-            activeTechnique = techniques[0]
+            activeTechnique = "RadialNoise"#techniques[0]
             r_col = random.randint(0,255)
             g_col = random.randint(0,255)
             b_col = random.randint(0,255)
             a_col = random.randint(5,40)
-            multX = random.uniform(0.0001, 0.1)
-            multY = multX#0.001
+            # multX = random.uniform(0.0001, 0.1)
+            # multY = multX#0.001
 
             if activeTechnique == "WolframCA":
                 cells, ruleset = initCA()
-            else:
+            elif activeTechnique == "NoiseField":
                 noise_grid = makeNoiseField(noise_grid, multX, multY, "flow")
                 particles = generateParticles()
+            else:
+                pass
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -351,6 +374,37 @@ if __name__ == "__main__":
                         p['x'] = random.randint(0,SCR_WIDTH-1)
                         p['y'] = random.randint(0,SCR_HEIGHT-1)
                 # main_surf.blit(noise_surf, (0, 0))
+
+            elif activeTechnique == "RadialNoise":
+                points = []
+                for t in np.nditer(radial_steps):
+                    x = HALF_SCR_W + (radial_r * math.cos(t[0]))
+                    y = HALF_SCR_H + (radial_r * math.sin(t[0]))
+
+                    n = opensimplex.noise3(x=x*0.1, y=y*0.1, z=0)
+                    n2 = opensimplex.noise3(x=x*0.1, y=y*0.1, z=1)
+                    off = p5map(n, -1.0, 1.0, -15, 15)
+                    off2 = p5map(n2, -1.0, 1.0, -15, 15)
+                    x += off
+                    y += off2
+                    points.append((x,y))
+                    # draw_rect_alpha(main_surf, main_col, pygame.Rect(x, y, 2, 2))
+                # pygame.draw.polygon(main_surf, main_col, points)
+                # draw_poly_alpha(main_surf, main_col, points)
+                draw_polygon_alpha(main_surf, main_col, points)
+
+
+                radial_r += 15
+                if radial_r > min(SCR_HEIGHT, SCR_WIDTH):
+                    radial_r = 5
+                    r_col = random.randint(0,255)
+                    g_col = random.randint(0,255)
+                    b_col = random.randint(0,255)
+                    a_col = random.randint(5,40)
+
+
+            else:
+                pass
 
 
 
