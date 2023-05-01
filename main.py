@@ -9,8 +9,12 @@ import opensimplex
 # from pixelsort import pixelsort
 
 # display
-SCR_WIDTH = 800#1920
-SCR_HEIGHT = 600#1080
+#SCR_WIDTH = 800
+#SCR_HEIGHT = 600 
+SCR_WIDTH_d = 1920
+SCR_HEIGHT_d = 1080
+SCR_WIDTH = 960#1280
+SCR_HEIGHT = 540#720
 
 HALF_SCR_W = SCR_WIDTH // 2
 HALF_SCR_H = SCR_HEIGHT // 2
@@ -187,10 +191,12 @@ if __name__ == "__main__":
 
     pygame.display.set_caption("HWVisualizer")
 
-    display = pygame.display.set_mode((SCR_WIDTH, SCR_HEIGHT), pygame.HWSURFACE | pygame.DOUBLEBUF)# | pygame.FULLSCREEN)
+    display = pygame.display.set_mode((SCR_WIDTH_d, SCR_HEIGHT_d), pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN)
     display.fill((20,20, 20))
 
     clock = pygame.time.Clock()
+
+    pygame.mouse.set_visible(0)
 
     opensimplex.seed(random.randint(0,100000))
 
@@ -200,6 +206,7 @@ if __name__ == "__main__":
     display.blit(background_surf, (0, 0))
 
     # the 'main' drawing area
+    main_surf2 = pygame.Surface(pygame.Rect((0,0,SCR_WIDTH_d, SCR_HEIGHT_d)).size, pygame.SRCALPHA)
     main_surf = pygame.Surface(pygame.Rect((0,0,SCR_WIDTH, SCR_HEIGHT)).size, pygame.SRCALPHA)
     ui_surf = pygame.Surface(pygame.Rect((0,0,500,500)).size, pygame.SRCALPHA)
 
@@ -222,7 +229,7 @@ if __name__ == "__main__":
     r_col = random.randint(0,255)
     g_col = random.randint(0,255)
     b_col = random.randint(0,255)
-    a_col = random.randint(5,40)
+    a_col = random.randint(15,40)
     main_col = (r_col, g_col, b_col, a_col)
 
     refreshTimer = 0
@@ -230,8 +237,9 @@ if __name__ == "__main__":
     paused = False
 
     techniques = ["WolframCA", "NoiseField", "RadialNoise"]
+    #techniques = ["WolframCA", "RadialNoise"]
     random.shuffle(techniques)
-    activeTechnique = "RadialNoise"#techniques[0]
+    activeTechnique = techniques[0]
 
     display.blit(background_surf, (0, 0))
     main_surf.blit(background_surf, (0, 0))
@@ -256,11 +264,11 @@ if __name__ == "__main__":
         if refreshTimer >= maxRefresh:
             refreshTimer = 0
             random.shuffle(techniques)
-            activeTechnique = "RadialNoise"#techniques[0]
+            activeTechnique = techniques[0]
             r_col = random.randint(0,255)
             g_col = random.randint(0,255)
             b_col = random.randint(0,255)
-            a_col = random.randint(5,40)
+            a_col = random.randint(15,40)
             # multX = random.uniform(0.0001, 0.1)
             # multY = multX#0.001
 
@@ -302,7 +310,7 @@ if __name__ == "__main__":
                     g_col = random.randint(0,255)
                     b_col = random.randint(0,255)
                    # a_col = random.randint(10,80)
-                    a_col = random.randint(5,40)
+                    a_col = random.randint(15,40)
 
                     random.shuffle(techniques)
                     activeTechnique = techniques[0]
@@ -395,12 +403,12 @@ if __name__ == "__main__":
 
 
                 radial_r += 15
-                if radial_r > min(SCR_HEIGHT, SCR_WIDTH):
+                if radial_r > max(SCR_HEIGHT, SCR_WIDTH):
                     radial_r = 5
                     r_col = random.randint(0,255)
                     g_col = random.randint(0,255)
                     b_col = random.randint(0,255)
-                    a_col = random.randint(5,40)
+                    a_col = random.randint(15,40)
 
 
             else:
@@ -410,7 +418,10 @@ if __name__ == "__main__":
 
 
         # blit surfaces to screen
-        display.blit(main_surf, (0, 0))
+
+        main_surf2 = pygame.transform.scale(main_surf, (SCR_WIDTH_d, SCR_HEIGHT_d))
+        #display.blit(main_surf, (0, 0))
+        display.blit(main_surf2, (0, 0))
         display.blit(ui_surf, (0, 0))
 
         pygame.display.update()
