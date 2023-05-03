@@ -1,9 +1,14 @@
 # https://medium.com/@swaroopkml96/deploying-your-p5-js-sketch-using-flask-on-heroku-8702492047f5
 # https://gabrieltanner.org/blog/realtime-drawing-app/
 
+## TBD
+# - CORS issue when running on web server
+
 from flask import Flask, render_template, url_for, send_from_directory
 from flask_bootstrap import Bootstrap
 from flask_socketio import SocketIO
+
+import os,  json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 's3cr3t'
@@ -32,6 +37,17 @@ def handle_connection(data):
     currentState = data
     print("Color received: {0}".format(data))
     socketio.emit('new bgColor', {'bgColor': data}, include_self=False)#, broadcast=True)
+
+### PASS THE FILENAMES AND LET P5 LOAD!
+@socketio.on("checkForUpdates")
+def handle_updates(data):
+    path = "./static/techniques"
+    files = os.listdir(path)
+    xmit = []
+    for file in files:
+        if file.endswith(".js"):
+            xmit.append(file)
+    socketio.emit("new techniques", json.dumps(xmit))
 
 ### Routes
 @app.route('/')
