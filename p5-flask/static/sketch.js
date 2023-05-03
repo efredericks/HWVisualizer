@@ -110,7 +110,7 @@ function draw() {
     }
 
     if (step == 3)
-    ff.update();
+        ff.update();
 
     // check for new techniques
     if ((frameCount % 100) == 0) {
