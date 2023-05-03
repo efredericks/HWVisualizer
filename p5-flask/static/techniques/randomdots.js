@@ -1,4 +1,4 @@
-const RandomDots = class {
+const randomdots = class {
     constructor() {
         this.num_particles = 20;
         this.color = "#ffff00";
