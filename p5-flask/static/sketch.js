@@ -1,6 +1,7 @@
 const DIM = 600;
 let n;
-let techniques = [];
+let techniques = {};
+let registry = {};
 let activeTechnique, activeTechniqueObj;
 let changeOver;
 let initialTechnique = false;
@@ -13,6 +14,8 @@ let scr;
 function setup() {
     createCanvas(DIM, DIM).parent('canvasHolder');
     changeOver = 250;
+
+    registry = {};
 
     /*** socket things ***/
     socket = io.connect('http://localhost:8081');
@@ -27,7 +30,18 @@ function setup() {
     });
 
     socket.on("new techniques", (data) => {
-        test(JSON.parse(data));
+        let _techniques = JSON.parse(data);
+
+        for (t of _techniques) {
+            if (!(t in Object.keys(techniques))) {
+                loadNewScript(t);
+                // techniques[t] = loadNewObject(t);
+            }
+        }
+
+        // console.log(registry, techniques)
+
+        // test(JSON.parse(data));
     });
 
 
@@ -47,8 +61,10 @@ function setup() {
     // scr = createElement("script");
     // scr.src = "./techniques/flow-field.js";
     // test(['flowfield.js']);
+    socket.emit("checkForUpdates", null);
 }
 
+/*
 function loadTechniques(arr) {
     let loadJS = new Promise(resolve => {
         setTimeout(() => {
@@ -93,7 +109,7 @@ async function test(arr) {
     // a = new FlowField();
     // a.update();
 }
-
+*/
 
 let step = 0;
 let ff;
@@ -130,7 +146,22 @@ function draw() {
     // check for new techniques
     if ((frameCount % 100) == 0) {
         socket.emit("checkForUpdates", null);
+
+        if (registry != {}) {
+            let idx = random(Object.keys(registry));
+            // console.log(idx)
+            if (registry[idx] != null) {
+                activeTechniqueObj = loadNewObject(idx);
+            }
+        }
+        /*
+        if (techniques.length > 0) {
+            activeTechnique = random(Object.keys(techniques));
+            activeTechniqueObj = techniques[activeTechnique];
+        }
+        */
     }
+
 
     // swap technique
     /*
@@ -159,8 +190,22 @@ function loadObject(technique) {
             return _activeObj;
         }
         return null;
-    } 
+    }
     catch (e) {
         return null;
     }
+}
+
+// https://stackoverflow.com/questions/76175598/restructuring-dynamically-loaded-scripts-within-javascript-program-to-avoid-eval/76175687#76175687
+async function loadNewScript(scriptName) {
+    const module = await import(`/static/techniques/${scriptName}`);
+    registry[scriptName] = module.default;
+    // return import(`/static/techniques/${scriptName}`);
+}
+function loadNewObject(technique) {
+    const obj = registry[technique];
+    return obj ? new obj() : null;
+    // const module = await loadNewScript(technique);
+    // const obj = module.default;
+    // return new obj();
 }

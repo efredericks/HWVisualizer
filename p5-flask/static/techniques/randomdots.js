@@ -1,4 +1,4 @@
-const randomdots = class {
+export default class randomdots  {
     constructor() {
         this.num_particles = 20;
         this.color = "#ffff00";

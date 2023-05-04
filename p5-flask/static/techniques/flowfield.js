@@ -1,4 +1,4 @@
-const flowfield = class {
+export default class flowfield {
     constructor() {
         this.num_particles = 20;
         this.color = "#ff00ff";

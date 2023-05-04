@@ -1,4 +1,4 @@
-const randomlines = class {
+export default class randomlines {
     constructor() {
         this.num_particles = 20;
         this.color = "#00ff00";
