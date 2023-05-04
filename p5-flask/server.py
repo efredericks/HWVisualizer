@@ -4,6 +4,13 @@
 ## TBD
 # - CORS issue when running on web server
 
+
+####
+# Class name must match filename
+#   * provide constructor, update functions
+#   * accept a palette and sketch information minimally
+#   * tick rate?
+
 from flask import Flask, render_template, url_for, send_from_directory
 from flask_bootstrap import Bootstrap
 from flask_socketio import SocketIO
