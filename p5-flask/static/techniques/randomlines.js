@@ -1,15 +1,16 @@
 export default class randomlines {
-    constructor() {
+    constructor(sk) {
+        this.sk = sk;
         this.num_particles = 20;
         this.color = "#00ff00";
     }
 
     update() {
-        noFill();
-        stroke(color(this.color));
-        strokeWeight(2);
+        this.sk.noFill();
+        this.sk.stroke(this.sk.color(this.color));
+        this.sk.strokeWeight(2);
         for (let _ = 0; _ < this.num_particles; _++) {
-            line(random(width),random(height),random(width), random(height));
+            this.sk.line(this.sk.random(this.sk.width), this.sk.random(this.sk.height), this.sk.random(this.sk.width), this.sk.random(this.sk.height));
         }
         return true;
     }

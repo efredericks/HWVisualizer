@@ -10,6 +10,8 @@
 #   * provide constructor, update functions
 #   * accept a palette and sketch information minimally
 #   * tick rate?
+#   * hook into firebase for saved images?
+#      * i.e., create a unique entry per connection
 
 from flask import Flask, render_template, url_for, send_from_directory
 from flask_bootstrap import Bootstrap
