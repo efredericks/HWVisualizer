@@ -1,17 +1,20 @@
 export default class flowfield {
-    constructor(sk) {
+    constructor(sk, palette) {
         this.sk = sk;
+        this.palette = palette;
         this.num_particles = 50;
-        this.noiseZoom = 0.01;
-        this.color = "#ff00ff";
+        this.noiseZoom = sk.random(0.001, 0.1);//0.01;
+        // this.color = "#ff00ff";
         this.particles = [];
         this.grid = [];
 
         for (let _ = 0; _ < this.num_particles; _++) {
+            let col = sk.color(sk.random(palette));
+            col.setAlpha(sk.random(10,255));
             this.particles.push({
                 x: sk.random(0,sk.width-1),
                 y: sk.random(0,sk.height-1),
-                col: sk.color(255,0,255)//sk.random(0,255), sk.random(0,255), sk.random(0,255),  sk.random(20.120))
+                col: col 
             });
         }
 

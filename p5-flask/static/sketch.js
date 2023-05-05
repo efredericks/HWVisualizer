@@ -7,8 +7,10 @@ const s = (sk) => {
     let activeTechnique, activeTechniqueObj;
     let initialTechnique = false;
     let scr;
+    let vaporwave = ["#ff71ce", "#01cdfe", "#05ffa1", "#b967ff", "#fffb96"];
+    let paused = false;
 
-    sk.preload = () => {};
+    sk.preload = () => { };
 
     sk.setup = () => {
         sk.createCanvas(DIM, DIM).parent('canvasHolder');
@@ -57,23 +59,29 @@ const s = (sk) => {
     };
 
     sk.draw = () => {
-        // an active object in memory
-        if (activeTechniqueObj != null) {
-            activeTechniqueObj.update();
-        }
+        if (!paused) {
+            // an active object in memory
+            if (activeTechniqueObj != null) {
+                activeTechniqueObj.update();
+            }
 
-        // check for new techniques and pick a random technique to continue
-        if ((sk.frameCount % changeOver) == 0) {
-            socket.emit("checkForUpdates", null);
+            // check for new techniques and pick a random technique to continue
+            if ((sk.frameCount % changeOver) == 0) {
+                socket.emit("checkForUpdates", null);
 
-            if (registry != {}) {
-                let idx = sk.random(Object.keys(registry));
-                // console.log(idx)
-                if (registry[idx] != null) {
-                    activeTechniqueObj = loadNewObject(idx);
+                if (registry != {}) {
+                    let idx = sk.random(Object.keys(registry));
+                    // console.log(idx)
+                    if (registry[idx] != null) {
+                        activeTechniqueObj = loadNewObject(idx);
+                    }
                 }
             }
         }
+    };
+
+    sk.keyPressed = () => {
+        if (sk.key == "p") paused = !paused;
     };
 
     // function sendColor() {
@@ -90,7 +98,7 @@ const s = (sk) => {
     }
     function loadNewObject(technique) {
         const obj = registry[technique];
-        return obj ? new obj(sk) : null;
+        return obj ? new obj(sk, vaporwave) : null;
     }
 };
 
