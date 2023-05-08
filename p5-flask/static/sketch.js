@@ -1,5 +1,5 @@
 const s = (sk) => {
-    const DIM = 600;
+    const DIM = 1000;
     const changeOver = 250;
     let n;
     let techniques = {};
