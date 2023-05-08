@@ -1,0 +1,3 @@
+[submodule "p5-flask/static/HWVisualizer-Techniques"]
+	path = p5-flask/static/HWVisualizer-Techniques
+	url = https://github.com/efredericks/HWVisualizer-Techniques
