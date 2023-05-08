@@ -50,7 +50,8 @@ def handle_connection(data):
 ### PASS THE FILENAMES AND LET P5 LOAD!
 @socketio.on("checkForUpdates")
 def handle_updates(data):
-    path = "./static/techniques"
+    # path = "./static/techniques"
+    path = "./static/HWVisualizer-Techniques"
     files = os.listdir(path)
     xmit = []
     for file in files:
