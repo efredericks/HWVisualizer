@@ -50,7 +50,7 @@ Your script must pass two checks to be included in production: a set of unit tes
 
 2. Scripts must also pass a manual review process to ensure that not-safe-for-work content is not included (this will be displayed publicly in a school setting) as well as no unsafe code is executed (e.g., security concerns).  If your script attempts to sidestep either of these rules then any future submissions by the author will be rejected without review.
 
-## Pulling Latest Changse
+## Pulling Latest Changes
 
 The techniques are set as a submodule to separate out the main frontend of the project and the generative art / CI process.  PRs should be sent to the [HWVisualizer-Techniques](https://github.com/efredericks/HWVisualizer-Techniques) repository.
 
