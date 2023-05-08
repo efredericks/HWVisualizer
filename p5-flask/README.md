@@ -57,3 +57,15 @@ The techniques are set as a submodule to separate out the main frontend of the p
 To pull the latest changes, the submodule must be updated:
 
 `git submodule foreach --recursive git pull`
+
+# Resources
+
+Looking for ideas or where to get started?  Here is a list of common places for getting started with generative art:
+
+* [p5js Examples](https://p5js.org/examples/)
+* [The Coding Train](https://thecodingtrain.com/)
+* [The Nature of Code](https://natureofcode.com/book/chapter-10-neural-networks/)
+* [Inigo Quilez](https://iquilezles.org/)
+* [generative artistry](https://generativeartistry.com/)
+* [Attractor Functions - Shahrukh Omar](https://www.shahrukhomar.com/posts/attractor-functions/)
+* [L-Systems](https://vexlio.com/blog/drawing-simple-organics-with-l-systems/)
