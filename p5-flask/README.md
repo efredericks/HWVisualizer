@@ -49,3 +49,11 @@ Your script must pass two checks to be included in production: a set of unit tes
 1. The unit tests (TBD) ensure that your script meets expected performance and drawing criteria.
 
 2. Scripts must also pass a manual review process to ensure that not-safe-for-work content is not included (this will be displayed publicly in a school setting) as well as no unsafe code is executed (e.g., security concerns).  If your script attempts to sidestep either of these rules then any future submissions by the author will be rejected without review.
+
+## Pulling Latest Changse
+
+The techniques are set as a submodule to separate out the main frontend of the project and the generative art / CI process.  PRs should be sent to the [HWVisualizer-Techniques](https://github.com/efredericks/HWVisualizer-Techniques) repository.
+
+To pull the latest changes, the submodule must be updated:
+
+`git submodule foreach --recursive git pull`
