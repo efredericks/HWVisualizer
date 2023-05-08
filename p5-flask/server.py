@@ -51,7 +51,7 @@ def handle_connection(data):
 @socketio.on("checkForUpdates")
 def handle_updates(data):
     # path = "./static/techniques"
-    path = "./static/HWVisualizer-Techniques"
+    path = "./static/HWVisualizer-Techniques/techniques"
     files = os.listdir(path)
     xmit = []
     for file in files:

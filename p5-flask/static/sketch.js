@@ -94,7 +94,7 @@ const s = (sk) => {
     // https://stackoverflow.com/questions/76175598/restructuring-dynamically-loaded-scripts-within-javascript-program-to-avoid-eval/76175687#76175687
     async function loadNewScript(scriptName) {
         // const module = await import(`/static/techniques/${scriptName}`);
-        const module = await import(`/static/HWVisualizer-Techniques/${scriptName}`);
+        const module = await import(`/static/HWVisualizer-Techniques/techniques/${scriptName}`);
         registry[scriptName] = module.default;
     }
     function loadNewObject(technique) {
